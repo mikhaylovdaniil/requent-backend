@@ -1,19 +1,47 @@
 import Elysia from "elysia";
 import { notesTable } from "../db/schema";
 import { db } from "../db/db";
-
+import { eq } from "drizzle-orm";
 import { cors } from "@elysiajs/cors";
-
+import { newNote, NoteCreate } from "../models/notes";
 const router = new Elysia({ prefix: "/notes" });
 
-router.get("/", async () => {
+router.get("/", async ({ status }) => {
   const results = await db.select().from(notesTable);
 
   if (results.length === 0) status(204, "Notes are empty");
   return results;
 });
 
-router.get("/:id", async ({ params: { id } }) => {
+router.post(
+  "/",
+  async ({ body, status }) => {
+    try {
+      const insertNote: newNote = {
+        title: body.title,
+        description: body.description,
+        tags: body.tags?.join(","),
+        progress: 0,
+        completed: 0,
+      };
+
+      const result = await db
+        .insert(notesTable)
+        .values(insertNote)
+        .returning({ insertedId: notesTable.id });
+
+      return { id: result[0].insertedId };
+    } catch (err) {
+      console.log("Error while inserting note: " + err);
+      status(500, "Note not created");
+    }
+  },
+  {
+    body: NoteCreate,
+  },
+);
+
+router.get("/:id", async ({ params: { id }, status }) => {
   const result = await db
     .select()
     .from(notesTable)
@@ -23,7 +51,7 @@ router.get("/:id", async ({ params: { id } }) => {
   return result;
 });
 
-router.put("/:id/complete", async ({ params: { id } }) => {
+router.put("/:id/complete", async ({ params: { id }, status }) => {
   const note = await db.select().from(notesTable).where(eq(notesTable.id, id));
 
   if (note.length === 0) status(404, "Note not found");
@@ -40,7 +68,7 @@ router.put("/:id/complete", async ({ params: { id } }) => {
   }
 });
 
-router.delete("/:id", async ({ params: { id } }) => {
+router.delete("/:id", async ({ params: { id }, status }) => {
   try {
     await db.delete(notesTable).where(eq(notesTable.id, id));
     return { message: "Note Deleted" };

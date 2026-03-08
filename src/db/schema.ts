@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 export const notesTable = table("notes", {
   id: int().primaryKey({ autoIncrement: true }),
   title: text().notNull(),
-  description: int().notNull(),
+  description: text().notNull(),
   tags: text(),
   progress: int()
     .notNull()
