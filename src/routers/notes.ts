@@ -25,12 +25,9 @@ router.post(
         completed: 0,
       };
 
-      const result = await db
-        .insert(notesTable)
-        .values(insertNote)
-        .returning({ insertedId: notesTable.id });
+      const result = await db.insert(notesTable).values(insertNote).returning();
 
-      return { id: result[0].insertedId };
+      return { note: result[0] };
     } catch (err) {
       console.log("Error while inserting note: " + err);
       status(500, "Note not created");
